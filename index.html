@@ -2,49 +2,188 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Weaponized Year 2038 Clock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Stress Test Suite</title>
     <style>
-        body { background: #000; color: #ff3333; font-family: monospace; text-align: center; padding-top: 20vh; }
-        .clock { font-size: 3rem; margin: 20px; color: #ff0000; }
-        input { width: 80%; }
+        body { 
+            background: #050505; 
+            color: #fff; 
+            font-family: 'Courier New', Courier, monospace; 
+            text-align: center; 
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #ffffff;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+        .grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+        .box {
+            background: #111;
+            border: 1px solid #222;
+            border-radius: 8px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+        .clock { 
+            font-size: 2.2rem; 
+            margin: 20px 0; 
+            color: #00ff00; 
+            text-shadow: 0 0 8px rgba(0, 255, 0, 0.3);
+        }
+        .btn { 
+            color: white; 
+            border: none; 
+            padding: 14px 28px; 
+            font-size: 1rem; 
+            font-family: 'Courier New', Courier, monospace; 
+            cursor: pointer; 
+            border-radius: 5px; 
+            font-weight: bold;
+            width: 100%;
+            box-sizing: border-box;
+            transition: background 0.2s;
+        }
+        .btn-cpu { 
+            background: #00ff00; 
+            color: #000;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+        }
+        .btn-cpu:hover { background: #33ff33; }
+        .btn-vram { 
+            background: #ff0055;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.2);
+        }
+        .btn-vram:hover { background: #ff3377; }
+        .log-text { 
+            margin-top: 15px; 
+            color: #888; 
+            font-size: 0.9rem; 
+        }
+        @media (min-width: 768px) {
+            .grid {
+                max-width: 900px;
+                flex-direction: row;
+            }
+            .box {
+                flex: 1;
+            }
+        }
     </style>
 </head>
 <body>
 
-    <h2>REAL 2038 CRASH CLOCK</h2>
-    <p>WARNING: Moving the slider into 2038 will intentionally crash this browser tab.</p>
+    <h1>HARDWARE STRESS SUITE</h1>
+    <div class="subtitle">Hosted via GitHub Pages • Target: Client Browser Thread</div>
 
-    <div class="clock" id="clock">Loading...</div>
-    <input type="range" id="timeSlider" min="2147483600" max="2147483650" value="2147483600">
+    <div class="grid">
+        <!-- TEST 1: THE Y2K38 TIME BOMB -->
+        <div class="box" id="cpuBox">
+            <h3>TEST 01: CPU TIME OVERFLOW</h3>
+            <p style="color: #aaa; font-size: 0.85rem;">Triggers an infinite while-loop thread lock when the 32-bit counter rolls over into a negative value.</p>
+            <div class="clock" id="clockDisplay">03:14:00 UTC</div>
+            <button class="btn btn-cpu" id="cpuBtn">RUN 2038 AUTO-CRASH</button>
+            <div class="log-text" id="cpuLog">Status: Standby</div>
+        </div>
+
+        <!-- TEST 2: THE VRAM FLOODER -->
+        <div class="box" id="vramBox">
+            <h3>TEST 02: VRAM GRAPHICS FLOOD</h3>
+            <p style="color: #aaa; font-size: 0.85rem;">Floods the GPU memory pipeline with uncompressed 4K WebGL textures until the graphics engine breaks.</p>
+            <button class="btn btn-vram" id="vramBtn" style="margin-top: 25px;">LAUNCH VRAM FLOOD</button>
+            <div class="log-text" id="vramLog">Status: Standby</div>
+        </div>
+    </div>
+
+    <!-- Hidden canvas required for initializing WebGL graphics framework -->
+    <canvas id="glCanvas" style="display:none;"></canvas>
 
 <script>
-    const slider = document.getElementById('timeSlider');
-    const clock = document.getElementById('clock');
+    // ==========================================
+    // MODULE 01: CPU INTEGRAL OVERFLOW CODE
+    // ==========================================
+    const clockDisplay = document.getElementById('clockDisplay');
+    const cpuLog = document.getElementById('cpuLog');
+    const cpuBox = document.getElementById('cpuBox');
+    
+    document.getElementById('cpuBtn').addEventListener('click', () => {
+        let currentSeconds = 2147483637; // Starts 10 seconds away from the overflow limit
+        cpuLog.innerText = "Sequence initiated...";
+        cpuLog.style.color = "#00ff00";
 
-    slider.addEventListener('input', () => {
-        let systemTime = parseInt(slider.value);
-        
-        // Force the number into a 32-bit signed integer
-        let bit32Time = systemTime | 0;
-
-        // Display the date
-        let dateObj = new Date(bit32Time * 1000);
-        clock.innerText = dateObj.toUTCString();
-
-        // HARDWARE DESTRUCTION LAYER:
-        // If the 32-bit integer overflows and flips negative (under 0), 
-        // we intentionally force an infinite loop to freeze the system.
-        if (bit32Time < 0) {
-            console.log("CRASHING SYSTEM NOW...");
+        const timer = setInterval(() => {
+            currentSeconds++;
             
-            // This infinite while loop forces the processor to use 100% thread power
-            // freezing the screen, blocking input, and forcing the tab to crash.
-            while (true) {
-                // The loop never ends. The browser tab is dead.
+            // Mask value to signed 32-bit integer space
+            let bit32Time = currentSeconds | 0;
+            let dateObj = new Date(bit32Time * 1000);
+            clockDisplay.innerText = dateObj.toUTCString().replace("GMT", "UTC");
+
+            if (bit32Time < 0) {
+                clearInterval(timer);
+                clockDisplay.style.color = "#ff0000";
+                cpuLog.innerText = "CRITICAL METRIC EXCEEDED: FREEZING THREAD";
+                cpuLog.style.color = "#ff0000";
+                cpuBox.style.borderColor = "#ff0000";
+                
+                // Infinite execution execution loop to cause immediate tab freeze
+                while (true) {} 
             }
+        }, 1000);
+    });
+
+    // ==========================================
+    // MODULE 02: VRAM GRAPHICS BUFFER FLOOD CODE
+    // ==========================================
+    document.getElementById('vramBtn').addEventListener('click', () => {
+        const canvas = document.getElementById('glCanvas');
+        const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        const vramLog = document.getElementById('vramLog');
+        const vramBox = document.getElementById('vramBox');
+
+        if (!gl) {
+            vramLog.innerText = "Fatal: WebGL pipeline generation unsupported.";
+            vramLog.style.color = "#ff0055";
+            return;
         }
+
+        vramLog.innerText = "Allocating assets...";
+        vramLog.style.color = "#ff0055";
+        vramBox.style.borderColor = "#ff0055";
+        
+        const texturePile = [];
+
+        // Loop execution injects memory payloads into the graphics engine
+        setInterval(() => {
+            try {
+                const tex = gl.createTexture();
+                gl.bindTexture(gl.TEXTURE_2D, tex);
+                
+                // Construct a 4096 x 4096 byte uncompressed allocation stack (~67MB)
+                gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 4096, 4096, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+                texturePile.push(tex);
+                
+                vramLog.innerText = `Active Buffers: ${texturePile.length} (~${texturePile.length * 67}MB GPU VRAM saturated)`;
+            } catch (e) {
+                vramLog.innerText = "Hardware execution terminated: " + e.message;
+            }
+        }, 50);
     });
 </script>
 
 </body>
 </html>
+
