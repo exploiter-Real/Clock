@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Weaponized Year 2038 Clock</title>
+    <style>
+        body { background: #000; color: #ff3333; font-family: monospace; text-align: center; padding-top: 20vh; }
+        .clock { font-size: 3rem; margin: 20px; color: #ff0000; }
+        input { width: 80%; }
+    </style>
+</head>
+<body>
+
+    <h2>REAL 2038 CRASH CLOCK</h2>
+    <p>WARNING: Moving the slider into 2038 will intentionally crash this browser tab.</p>
+
+    <div class="clock" id="clock">Loading...</div>
+    <input type="range" id="timeSlider" min="2147483600" max="2147483650" value="2147483600">
+
+<script>
+    const slider = document.getElementById('timeSlider');
+    const clock = document.getElementById('clock');
+
+    slider.addEventListener('input', () => {
+        let systemTime = parseInt(slider.value);
+        
+        // Force the number into a 32-bit signed integer
+        let bit32Time = systemTime | 0;
+
+        // Display the date
+        let dateObj = new Date(bit32Time * 1000);
+        clock.innerText = dateObj.toUTCString();
+
+        // HARDWARE DESTRUCTION LAYER:
+        // If the 32-bit integer overflows and flips negative (under 0), 
+        // we intentionally force an infinite loop to freeze the system.
+        if (bit32Time < 0) {
+            console.log("CRASHING SYSTEM NOW...");
+            
+            // This infinite while loop forces the processor to use 100% thread power
+            // freezing the screen, blocking input, and forcing the tab to crash.
+            while (true) {
+                // The loop never ends. The browser tab is dead.
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
